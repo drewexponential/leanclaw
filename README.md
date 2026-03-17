@@ -1,2 +1,56 @@
 # leanclaw
-Pared down openclaw wrapper focused on a secure and repeatable provisioning pattern with bare minimum features supporting experimentation that is safe and controlled
+
+A minimal Fly.io deployment wrapper for [openclaw](https://github.com/openclaw/openclaw).
+
+## Prerequisites
+
+- [flyctl](https://fly.io/docs/hands-on/install-flyctl/)
+- A [Fly.io](https://fly.io) account
+- An [Anthropic API key](https://console.anthropic.com/settings/keys)
+- A Telegram bot token — create via [@BotFather](https://t.me/botfather) (`/newbot`, then `/setprivacy` → Disable)
+
+## 1. Configure
+
+Set your app name and nearest Fly.io region in `fly.toml`:
+
+```toml
+app            = "my-openclaw"
+primary_region = "ord"
+```
+
+## 2. Deploy
+
+```bash
+flyctl auth login
+flyctl apps create <your-app-name>
+flyctl volumes create openclaw_data --region <your-region> --size 1
+flyctl secrets set ANTHROPIC_API_KEY=<your-key>
+flyctl secrets set TELEGRAM_BOT_TOKEN=<your-token>
+flyctl deploy
+```
+
+The gateway starts and writes a default config to `/data/openclaw.json`.
+
+## 3. Configure
+
+SSH in to set your Telegram user ID, then restart:
+
+```bash
+flyctl ssh console
+node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('/data/openclaw.json','utf8'));c.channels.telegram.allowFrom=[<your-id>];fs.writeFileSync('/data/openclaw.json',JSON.stringify(c,null,2))"
+exit
+flyctl machine restart
+```
+
+Find your Telegram user ID via [@userinfobot](https://t.me/userinfobot). Send your bot a DM to verify it responds.
+
+## Version management
+
+The pinned version lives in `fly.toml` under `[build.args]`.
+
+```bash
+# Smoke test latest without committing
+flyctl deploy --build-arg OPENCLAW_VERSION=latest
+
+# Adopt a new version — update OPENCLAW_VERSION in fly.toml and commit
+```
