@@ -15,9 +15,6 @@ primary_region = "iad"
   OPENCLAW_PREFER_PNPM  = "1"
   OPENCLAW_STATE_DIR    = "/data"
 
-[processes]
-  app = "/entrypoint.sh"
-
 [http_service]
   internal_port        = 3000
   force_https          = true

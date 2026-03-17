@@ -33,16 +33,19 @@ The gateway starts and writes a default config to `/data/openclaw.json`.
 
 ## 3. Configure
 
-SSH in to set your Telegram user ID, then restart:
+SSH in to set your model and Telegram user ID, then restart:
 
 ```bash
 flyctl ssh console
-node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('/data/openclaw.json','utf8'));c.channels.telegram.allowFrom=[<your-id>];fs.writeFileSync('/data/openclaw.json',JSON.stringify(c,null,2))"
+su - node
+openclaw config set agents.defaults.model.primary 'anthropic/claude-sonnet-4-6'
+openclaw config set channels.telegram.allowFrom '[<your-telegram-id>]'
+exit
 exit
 flyctl machine restart
 ```
 
-Find your Telegram user ID via [@userinfobot](https://t.me/userinfobot). Send your bot a DM to verify it responds.
+Find your Telegram user ID via [@userinfobot](https://t.me/userinfobot). The `su - node` is required — running `openclaw` as root creates state directories that the gateway cannot write to. Send your bot a DM to verify it responds.
 
 ## Version management
 
