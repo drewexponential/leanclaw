@@ -1,12 +1,15 @@
 #!/bin/sh
 set -e
 
-if [ ! -f /data/openclaw.json ]; then
-  cat > /data/openclaw.json << 'EOF'
+mkdir -p /data/state /data/state/workspace
+
+if [ ! -f /data/state/openclaw.json ]; then
+  cat > /data/state/openclaw.json << 'EOF'
 {
   "meta": {},
   "agents": {
     "defaults": {
+      "workspace": "/data/state/workspace",
       "contextPruning": {
         "mode": "cache-ttl",
         "ttl": "1h"
