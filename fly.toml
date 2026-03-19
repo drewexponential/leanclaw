@@ -4,16 +4,12 @@ primary_region = "iad"
 [build]
   dockerfile = "Dockerfile"
   [build.args]
-    OPENCLAW_VERSION = "2026.3.12"
+    OPENCLAW_VERSION = "latest"
 
 [env]
-  NODE_COMPILE_CACHE    = "/var/tmp/openclaw-compile-cache"
-  NODE_ENV              = "production"
-  NODE_OPTIONS          = "--max-old-space-size=1536"
-  OPENCLAW_CONFIG_PATH  = "/data/openclaw.json"
-  OPENCLAW_NO_RESPAWN   = "1"
-  OPENCLAW_PREFER_PNPM  = "1"
-  OPENCLAW_STATE_DIR    = "/data"
+  NODE_COMPILE_CACHE = "/var/tmp/openclaw-compile-cache"
+  NODE_ENV           = "production"
+  NODE_OPTIONS       = "--max-old-space-size=1536"
 
 [http_service]
   internal_port        = 3000
