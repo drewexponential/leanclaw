@@ -39,6 +39,27 @@ cmd_up() {
   [ -z "$TELEGRAM_TOKEN" ] && die "TELEGRAM_BOT_TOKEN is required"
 
   echo ""
+  echo "Tailscale (optional)"
+  echo "  Enables remote openclaw clients — such as agents running on other machines —"
+  echo "  to connect to this gateway over a private Tailscale network. Without it,"
+  echo "  the gateway is only reachable within Fly.io's private network (Telegram"
+  echo "  and other outbound channels work fine either way)."
+  printf "Enable Tailscale? [y/N]: "
+  read -r TAILSCALE_CHOICE
+  echo ""
+
+  TAILSCALE_KEY=""
+  if [ "$TAILSCALE_CHOICE" = "y" ] || [ "$TAILSCALE_CHOICE" = "Y" ]; then
+    echo "  Generate a reusable, pre-authorized auth key in the Tailscale admin"
+    echo "  console (Settings → Keys). Ephemeral keys will not survive restarts."
+    echo ""
+    printf "TAILSCALE_AUTHKEY: "
+    read -rs TAILSCALE_KEY
+    echo ""
+    [ -z "$TAILSCALE_KEY" ] && die "TAILSCALE_AUTHKEY is required when Tailscale is enabled"
+  fi
+
+  echo ""
   echo "==> Creating app..."
   flyctl apps create "$APP"
 
@@ -50,16 +71,28 @@ cmd_up() {
     --yes
 
   echo "==> Setting secrets..."
-  flyctl secrets set --app "$APP" \
-    "ANTHROPIC_API_KEY=$ANTHROPIC_KEY" \
-    "TELEGRAM_BOT_TOKEN=$TELEGRAM_TOKEN"
+  if [ -n "$TAILSCALE_KEY" ]; then
+    flyctl secrets set --app "$APP" \
+      "ANTHROPIC_API_KEY=$ANTHROPIC_KEY" \
+      "TELEGRAM_BOT_TOKEN=$TELEGRAM_TOKEN" \
+      "TAILSCALE_AUTHKEY=$TAILSCALE_KEY"
+  else
+    flyctl secrets set --app "$APP" \
+      "ANTHROPIC_API_KEY=$ANTHROPIC_KEY" \
+      "TELEGRAM_BOT_TOKEN=$TELEGRAM_TOKEN"
+  fi
+
+  if [ -n "$TAILSCALE_KEY" ]; then
+    echo "==> Enabling Tailscale build target..."
+    sed -i '' 's/target     = "base"/target     = "tailscale"/' "$FLY_TOML"
+  fi
 
   echo "==> Deploying..."
   flyctl deploy --app "$APP"
 
   echo ""
   echo "Done. Next steps:"
-  echo "  - Configure: flyctl ssh console → su - node → openclaw config set ..."
+  echo "  - Configure: flyctl ssh console → su node → openclaw config set ..."
   echo "  - Restore:   ./scripts/restore.sh <backup.tar.gz>"
 }
 
