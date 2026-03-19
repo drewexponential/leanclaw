@@ -44,10 +44,11 @@ if [ ! -f /data/state/openclaw.json ]; then
     }
   },
   "gateway": {
+    "mode": "local",
     "controlUi": { "enabled": false }
   },
   "plugins": {
-    "allow": ["telegram", "ollama"]
+    "deny": ["googlechat", "matrix", "nostr", "tlon", "twitch", "zalouser"]
   }
 }
 EOF
