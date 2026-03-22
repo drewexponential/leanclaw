@@ -7,11 +7,10 @@
 # What gets restored:
 #   - Everything under the state dir (credentials, sessions, workspace, cron, etc.)
 #   - Separate workspace asset if present (old-style backups where stateDir was /data)
-#   - channels.telegram.allowFrom applied via openclaw config set
 #
-# What is never restored:
-#   - openclaw.json — leanclaw's defaults always take precedence
-#   - openclaw.json.bak* — same
+# What is never restored directly:
+#   - openclaw.json — placed as openclaw.restore.json; entrypoint merges it on next start
+#   - openclaw.json.bak* — skipped
 #   - BOOTSTRAP.md — triggers openclaw's init ritual, must never be restored
 
 set -e
@@ -49,16 +48,9 @@ WORKSPACE_PAYLOAD=$(echo "$MANIFEST" \
   | grep '"archivePath"' \
   | sed 's/.*"archivePath": *"\(.*\)".*/\1/')
 
-# Extract allowFrom from backup config
-ALLOW_FROM=$(tar -xzf "$BACKUP" --to-stdout "$STATE_PAYLOAD/openclaw.json" 2>/dev/null \
-  | grep -A 5 '"allowFrom"' \
-  | grep -o '\[.*\]' \
-  | head -1)
-
 info "App:             $APP"
 info "Archive root:    $ARCHIVE_ROOT"
 info "Source stateDir: $SOURCE_STATE_DIR"
-info "allowFrom:       ${ALLOW_FROM:-not found}"
 echo ""
 
 info "Uploading backup and restore script..."
@@ -70,7 +62,6 @@ set -e
 ARCHIVE_ROOT="$ARCHIVE_ROOT"
 STATE_PAYLOAD="$STATE_PAYLOAD"
 WORKSPACE_PAYLOAD="$WORKSPACE_PAYLOAD"
-ALLOW_FROM='$ALLOW_FROM'
 
 # --- State: extract everything except openclaw.json and BOOTSTRAP.md ---
 tar -xzf /data/restore.tar.gz -C /tmp "\$STATE_PAYLOAD"
@@ -80,7 +71,11 @@ mkdir -p /data/state
 for item in "\$PSRC"/*; do
   name=\$(basename "\$item")
   case "\$name" in
-    openclaw.json|openclaw.json.bak*) echo "Skipping \$name" ;;
+    openclaw.json)
+      cp "\$item" /data/state/openclaw.restore.json
+      echo "Staged \$name as openclaw.restore.json (entrypoint will merge on next start)"
+      ;;
+    openclaw.json.bak*) echo "Skipping \$name" ;;
     *) cp -r "\$item" /data/state/ ;;
   esac
 done
@@ -100,12 +95,6 @@ if [ -n "\$WORKSPACE_PAYLOAD" ]; then
   rm -f /data/state/workspace/BOOTSTRAP.md
   chown -R node:node /data/state/workspace
   echo "Workspace (separate asset) restored."
-fi
-
-# --- allowFrom ---
-if [ -n "\$ALLOW_FROM" ]; then
-  su node -c "openclaw config set channels.telegram.allowFrom '\$ALLOW_FROM'"
-  echo "allowFrom applied."
 fi
 
 rm -rf /data/restore.tar.gz /data/restore.sh /tmp/"\$ARCHIVE_ROOT"

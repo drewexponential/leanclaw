@@ -20,6 +20,13 @@ if [ -n "${BRAVE_API_KEY}" ]; then
     /tmp/merged.json > /tmp/merged2.json && mv /tmp/merged2.json /tmp/merged.json
 fi
 
+# If a restore config exists, merge it on top (backup wins on conflicts), then delete it
+if [ -f /data/state/openclaw.restore.json ]; then
+  jq -s '.[0] * .[1]' /tmp/merged.json /data/state/openclaw.restore.json > /tmp/merged2.json \
+    && mv /tmp/merged2.json /tmp/merged.json
+  rm -f /data/state/openclaw.restore.json
+fi
+
 cp /tmp/merged.json /data/state/openclaw.json
 
 if [ -n "${TAILSCALE_AUTHKEY}" ]; then
