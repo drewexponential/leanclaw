@@ -29,12 +29,11 @@ Reads `app` and `primary_region` from `fly.toml`, prompts for secrets, then crea
 
 ## 3. Configure
 
-SSH in to set your model and Telegram user ID, then restart:
+SSH in to set your Telegram user ID, then restart:
 
 ```bash
 flyctl ssh console
 su node
-openclaw config set agents.defaults.model.primary 'anthropic/claude-sonnet-4-6'
 openclaw config set channels.telegram.allowFrom '[<your-telegram-id>]'
 exit
 exit
@@ -43,7 +42,23 @@ flyctl machine restart
 
 Find your Telegram user ID via [@userinfobot](https://t.me/userinfobot). The `su node` is required — running `openclaw` as root creates state directories that the gateway cannot write to. Use `su node` without the dash: `su - node` starts a login shell that drops the container's environment variables.
 
+The default model (`anthropic/claude-sonnet-4-6`) and other agent defaults are pre-configured by the entrypoint on first start.
+
 Send your bot a DM to verify it responds.
+
+## Secrets
+
+All sensitive values (`ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TAILSCALE_AUTHKEY`, `BRAVE_API_KEY`) are stored as [Fly.io secrets](https://fly.io/docs/apps/secrets/), not in `openclaw.json` or the image. Fly injects them as environment variables at runtime; OpenClaw reads them directly. Never put API keys in config files.
+
+## Tailscale networking
+
+When Tailscale is enabled, the gateway binds to `--bind lan` and uses `--tailscale serve` to expose port 3000 on the tailnet. The `--tailscale-reset-on-exit` flag cleans up the Serve config on shutdown. This means:
+
+- The gateway is reachable at `https://<hostname>.<tailnet>.ts.net` on your tailnet
+- Fly.io's public proxy is not used — remove `[http_service]` from `fly.toml` (handled by `provision.sh`)
+- Access requires being on your tailnet; the public internet has no path to the gateway
+
+Without Tailscale, the gateway binds to `--bind lan` only, reachable within Fly.io's private WireGuard network. Telegram and other outbound channels work fine in either mode.
 
 ## Backup
 
@@ -68,6 +83,8 @@ Re-set secrets after a restore (not included in backups):
 ```bash
 flyctl secrets set ANTHROPIC_API_KEY=<your-key>
 flyctl secrets set TELEGRAM_BOT_TOKEN=<your-token>
+flyctl secrets set BRAVE_API_KEY=<your-key>      # if web search was enabled
+flyctl secrets set TAILSCALE_AUTHKEY=<your-key>  # if Tailscale was enabled
 ```
 
 ## Teardown

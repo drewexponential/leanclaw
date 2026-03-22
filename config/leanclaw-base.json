@@ -1,0 +1,14 @@
+{
+  "gateway": {
+    "mode": "local",
+    "controlUi": { "enabled": false }
+  },
+  "plugins": {
+    "deny": ["googlechat", "matrix", "nostr", "tlon", "twitch", "zalouser"]
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "/data/state/workspace"
+    }
+  }
+}
