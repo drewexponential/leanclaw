@@ -38,6 +38,11 @@ cmd_up() {
   echo ""
   [ -z "$TELEGRAM_TOKEN" ] && die "TELEGRAM_BOT_TOKEN is required"
 
+  printf "TELEGRAM_ALLOW_FROM (comma-separated Telegram user IDs): "
+  read -r TELEGRAM_ALLOW_FROM
+  echo ""
+  [ -z "$TELEGRAM_ALLOW_FROM" ] && die "TELEGRAM_ALLOW_FROM is required"
+
   echo ""
   echo "Tailscale (optional)"
   echo "  Enables remote openclaw clients — such as agents running on other machines —"
@@ -60,6 +65,43 @@ cmd_up() {
   fi
 
   echo ""
+  echo "Web search (optional)"
+  echo "  Enables the agent to search the web via Brave Search. Requires a"
+  echo "  Brave Search API key (https://brave.com/search/api/)."
+  printf "Enable web search? [y/N]: "
+  read -r BRAVE_CHOICE
+  echo ""
+
+  BRAVE_KEY=""
+  if [ "$BRAVE_CHOICE" = "y" ] || [ "$BRAVE_CHOICE" = "Y" ]; then
+    printf "BRAVE_API_KEY: "
+    read -rs BRAVE_KEY
+    echo ""
+    [ -z "$BRAVE_KEY" ] && die "BRAVE_API_KEY is required when web search is enabled"
+  fi
+
+  echo ""
+  echo "GitHub (optional)"
+  echo "  Enables the agent to push config changes and open PRs against this repo."
+  echo "  Requires a fine-grained PAT with contents:write and pull_requests:write."
+  printf "Enable GitHub integration? [y/N]: "
+  read -r GITHUB_CHOICE
+  echo ""
+
+  GITHUB_TOKEN=""
+  GITHUB_REPO=""
+  if [ "$GITHUB_CHOICE" = "y" ] || [ "$GITHUB_CHOICE" = "Y" ]; then
+    printf "GITHUB_TOKEN (fine-grained PAT): "
+    read -rs GITHUB_TOKEN
+    echo ""
+    [ -z "$GITHUB_TOKEN" ] && die "GITHUB_TOKEN is required when GitHub integration is enabled"
+    printf "GitHub repo (owner/repo, e.g. myorg/leanclaw): "
+    read -r GITHUB_REPO
+    echo ""
+    [ -z "$GITHUB_REPO" ] && die "GitHub repo is required when GitHub integration is enabled"
+  fi
+
+  echo ""
   echo "==> Creating app..."
   flyctl apps create "$APP"
 
@@ -71,16 +113,12 @@ cmd_up() {
     --yes
 
   echo "==> Setting secrets..."
-  if [ -n "$TAILSCALE_KEY" ]; then
-    flyctl secrets set --app "$APP" \
-      "ANTHROPIC_API_KEY=$ANTHROPIC_KEY" \
-      "TELEGRAM_BOT_TOKEN=$TELEGRAM_TOKEN" \
-      "TAILSCALE_AUTHKEY=$TAILSCALE_KEY"
-  else
-    flyctl secrets set --app "$APP" \
-      "ANTHROPIC_API_KEY=$ANTHROPIC_KEY" \
-      "TELEGRAM_BOT_TOKEN=$TELEGRAM_TOKEN"
-  fi
+  SECRETS="ANTHROPIC_API_KEY=$ANTHROPIC_KEY TELEGRAM_BOT_TOKEN=$TELEGRAM_TOKEN TELEGRAM_ALLOW_FROM=$TELEGRAM_ALLOW_FROM"
+  [ -n "$TAILSCALE_KEY" ]  && SECRETS="$SECRETS TAILSCALE_AUTHKEY=$TAILSCALE_KEY"
+  [ -n "$BRAVE_KEY" ]      && SECRETS="$SECRETS BRAVE_API_KEY=$BRAVE_KEY"
+  [ -n "$GITHUB_TOKEN" ]   && SECRETS="$SECRETS GITHUB_TOKEN=$GITHUB_TOKEN"
+  # shellcheck disable=SC2086
+  flyctl secrets set --app "$APP" $SECRETS
 
   if [ -n "$TAILSCALE_KEY" ]; then
     echo "==> Enabling Tailscale build target..."
@@ -90,10 +128,16 @@ cmd_up() {
   echo "==> Deploying..."
   flyctl deploy --app "$APP"
 
+  if [ -n "$GITHUB_TOKEN" ] && [ -n "$GITHUB_REPO" ]; then
+    echo "==> Cloning repo onto volume..."
+    flyctl ssh console --app "$APP" --command \
+      "git clone https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git /data/state/workspace/leanclaw 2>/dev/null || echo 'Repo already cloned or clone failed — skipping.'"
+  fi
+
   echo ""
   echo "Done. Next steps:"
-  echo "  - Configure: flyctl ssh console → su node → openclaw config set ..."
   echo "  - Restore:   ./scripts/restore.sh <backup.tar.gz>"
+  [ -n "$GITHUB_TOKEN" ] && echo "  - Set FLY_API_TOKEN in GitHub repo secrets to enable auto-deploy on push"
 }
 
 cmd_down() {
