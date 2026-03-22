@@ -3,56 +3,24 @@ set -e
 
 mkdir -p /data/state /data/state/workspace /data/tailscale
 
-if [ ! -f /data/state/openclaw.json ]; then
-  cat > /data/state/openclaw.json << 'EOF'
-{
-  "meta": {},
-  "agents": {
-    "defaults": {
-      "workspace": "/data/state/workspace",
-      "contextPruning": {
-        "mode": "cache-ttl",
-        "ttl": "1h"
-      },
-      "compaction": {
-        "mode": "safeguard"
-      },
-      "heartbeat": {
-        "every": "30m"
-      },
-      "maxConcurrent": 4,
-      "subagents": {
-        "maxConcurrent": 8
-      }
-    }
-  },
-  "messages": {
-    "ackReactionScope": "group-mentions"
-  },
-  "commands": {
-    "native": "auto",
-    "nativeSkills": "auto",
-    "restart": true,
-    "ownerDisplay": "raw"
-  },
-  "channels": {
-    "telegram": {
-      "enabled": true,
-      "dmPolicy": "pairing",
-      "groupPolicy": "allowlist",
-      "streaming": "partial"
-    }
-  },
-  "gateway": {
-    "mode": "local",
-    "controlUi": { "enabled": false }
-  },
-  "plugins": {
-    "deny": ["googlechat", "matrix", "nostr", "tlon", "twitch", "zalouser"]
-  }
-}
-EOF
+# Merge config layers: base → overrides
+jq -s '.[0] * .[1]' /config/leanclaw-base.json /config/leanclaw-overrides.json > /tmp/merged.json
+
+# Inject TELEGRAM_ALLOW_FROM if set
+if [ -n "${TELEGRAM_ALLOW_FROM}" ]; then
+  jq --argjson allow "${TELEGRAM_ALLOW_FROM}" \
+    '.channels.telegram.allowFrom = $allow' \
+    /tmp/merged.json > /tmp/merged2.json && mv /tmp/merged2.json /tmp/merged.json
 fi
+
+# Inject BRAVE_API_KEY if set
+if [ -n "${BRAVE_API_KEY}" ]; then
+  jq --arg key "${BRAVE_API_KEY}" \
+    '.tools.web.search = {"enabled": true, "provider": "brave", "apiKey": $key}' \
+    /tmp/merged.json > /tmp/merged2.json && mv /tmp/merged2.json /tmp/merged.json
+fi
+
+cp /tmp/merged.json /data/state/openclaw.json
 
 if [ -n "${TAILSCALE_AUTHKEY}" ]; then
   tailscaled \

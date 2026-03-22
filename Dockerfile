@@ -8,7 +8,10 @@ ENV OPENCLAW_CONFIG_PATH=/data/state/openclaw.json \
 
 USER root
 
+RUN apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /var/lib/apt/lists/*
+
 COPY entrypoint.sh /entrypoint.sh
+COPY config/ /config/
 RUN chmod +x /entrypoint.sh
 
 USER node
