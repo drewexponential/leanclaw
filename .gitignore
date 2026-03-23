@@ -2,3 +2,4 @@
 .fly/
 *-openclaw-backup.tar.gz
 openclaw-backup.tar.gz
+.claude/

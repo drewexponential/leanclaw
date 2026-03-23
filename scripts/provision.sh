@@ -65,6 +65,21 @@ cmd_up() {
   fi
 
   echo ""
+  echo "Mistral (optional)"
+  echo "  Enables Devstral Small 2 as a cost-efficient coding model (alias: devstral)."
+  printf "Enable Mistral? [y/N]: "
+  read -r MISTRAL_CHOICE
+  echo ""
+
+  MISTRAL_KEY=""
+  if [ "$MISTRAL_CHOICE" = "y" ] || [ "$MISTRAL_CHOICE" = "Y" ]; then
+    printf "MISTRAL_API_KEY: "
+    read -rs MISTRAL_KEY
+    echo ""
+    [ -z "$MISTRAL_KEY" ] && die "MISTRAL_API_KEY is required when Mistral is enabled"
+  fi
+
+  echo ""
   echo "Web search (optional)"
   echo "  Enables the agent to search the web via Brave Search. Requires a"
   echo "  Brave Search API key (https://brave.com/search/api/)."
@@ -115,6 +130,7 @@ cmd_up() {
   echo "==> Setting secrets..."
   SECRETS="ANTHROPIC_API_KEY=$ANTHROPIC_KEY TELEGRAM_BOT_TOKEN=$TELEGRAM_TOKEN TELEGRAM_ALLOW_FROM=$TELEGRAM_ALLOW_FROM"
   [ -n "$TAILSCALE_KEY" ]  && SECRETS="$SECRETS TAILSCALE_AUTHKEY=$TAILSCALE_KEY"
+  [ -n "$MISTRAL_KEY" ]    && SECRETS="$SECRETS MISTRAL_API_KEY=$MISTRAL_KEY"
   [ -n "$BRAVE_KEY" ]      && SECRETS="$SECRETS BRAVE_API_KEY=$BRAVE_KEY"
   [ -n "$GITHUB_TOKEN" ]   && SECRETS="$SECRETS GITHUB_TOKEN=$GITHUB_TOKEN"
   # shellcheck disable=SC2086
