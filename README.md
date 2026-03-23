@@ -95,6 +95,71 @@ flyctl secrets set TAILSCALE_AUTHKEY=<your-key>  # if Tailscale was enabled
 
 Destroys the app and its volumes. Prompts for confirmation.
 
+## Heartbeat
+
+The heartbeat runs a periodic agent turn to surface anything that needs attention. LeanClaw configures it for minimal ambient cost by default.
+
+### Baseline config (`config/leanclaw-overrides.json`)
+
+```json
+"heartbeat": {
+  "every": "30m",
+  "model": "anthropic/claude-haiku-4-5-20251001",
+  "lightContext": true,
+  "isolatedSession": true,
+  "activeHours": {
+    "start": "08:00",
+    "end": "23:00",
+    "timezone": "America/New_York"
+  }
+}
+```
+
+- **`model: haiku`** — cheap and sufficient for routine signal evaluation
+- **`isolatedSession: true`** — each tick runs in a fresh session; no conversation history loaded (~100k → ~2-5k tokens per run)
+- **`lightContext: true`** — only `HEARTBEAT.md` is loaded at bootstrap; workspace files are excluded
+- **`activeHours`** — no overnight burns; adjust timezone to match your location
+
+### Cost dial: HEARTBEAT.md
+
+`workspace/HEARTBEAT.md` controls what the heartbeat actually does:
+
+| State | Behavior | Cost |
+|---|---|---|
+| Missing | Heartbeat runs; agent decides what to do | Haiku turn |
+| Exists, effectively empty (blank lines / `#` comments only) | OpenClaw skips the run entirely | **Zero** |
+| Has checklist content | Heartbeat runs; agent evaluates each item | Haiku turn |
+
+Keep `HEARTBEAT.md` empty until you have integrations worth checking. This is the intended default — the system stays on but costs nothing.
+
+### Scaling up
+
+Add items to `HEARTBEAT.md` incrementally as integrations come online:
+
+```md
+# Heartbeat checklist
+
+- Scan inbox for urgent emails
+- Check calendar for events in the next 2 hours
+```
+
+Each line is a check Haiku evaluates every 30 minutes. If nothing is urgent, it replies `HEARTBEAT_OK` and nothing is delivered to you.
+
+For checks that need more capability (nuanced analysis, complex routing decisions), use a dedicated cron job with a model override instead of the heartbeat:
+
+```bash
+openclaw cron add \
+  --name "Weekly review" \
+  --cron "0 9 * * 1" \
+  --tz "America/New_York" \
+  --session isolated \
+  --message "Review the week's work and surface anything worth following up on." \
+  --model opus \
+  --announce
+```
+
+The pattern: **heartbeat handles ambient awareness cheaply; cron handles scheduled depth**.
+
 ## Version management
 
 `OPENCLAW_VERSION` in `fly.toml` is currently set to `latest`. ghcr.io image tags do not reliably match openclaw's reported version numbers — use `openclaw --version` via SSH to identify what's actually running.
