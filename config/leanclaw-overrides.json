@@ -7,7 +7,8 @@
       "models": {
         "anthropic/claude-opus-4-6": { "alias": "opus" },
         "anthropic/claude-sonnet-4-6": { "alias": "sonnet" },
-        "anthropic/claude-haiku-4-5-20251001": { "alias": "haiku" }
+        "anthropic/claude-haiku-4-5-20251001": { "alias": "haiku" },
+        "mistral/devstral-small-2505": { "alias": "devstral" }
       },
       "contextPruning": {
         "mode": "cache-ttl",
