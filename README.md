@@ -95,6 +95,29 @@ flyctl secrets set TAILSCALE_AUTHKEY=<your-key>  # if Tailscale was enabled
 
 Destroys the app and its volumes. Prompts for confirmation.
 
+## Model Delegation: Haiku First, Sonnet When Needed
+
+LeanClaw defaults to Haiku for all agent tasks — fast, capable, and cost-effective.
+
+When a task demands deeper reasoning (complex architecture, advanced synthesis, edge cases), Dr. Claw asks for Sonnet escalation. This is a **gated but fluid** pattern:
+
+**Categories needing Sonnet:**
+- Complex system design and architecture decisions
+- Synthesis across multiple sources with novel analysis
+- Creative/strategic work (designing skills, frameworks, roadmaps)
+- Edge cases where nuance and judgment matter
+- Anything Haiku flags as uncertain
+
+**Request Format:**
+The agent flags the category and briefly explains why Haiku isn't sufficient. Example:
+> "I need Sonnet for system design. Planning the Tailscale integration requires reasoning about competing concerns (security, cost, topology)."
+
+**Response:** Approve ("yes"), deny ("no"), or no response (assume Haiku is fine).
+
+**After Escalation:** Return to Haiku for follow-up work.
+
+See `workspace/DELEGATION.md` for the full rubric.
+
 ## Heartbeat
 
 The heartbeat runs a periodic agent turn to surface anything that needs attention. LeanClaw configures it for minimal ambient cost by default.
