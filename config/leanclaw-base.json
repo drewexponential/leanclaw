@@ -1,6 +1,8 @@
 {
   "gateway": {
     "mode": "local",
+    "port": 3000,
+    "bind": "lan",
     "controlUi": { "enabled": false }
   },
   "plugins": {
