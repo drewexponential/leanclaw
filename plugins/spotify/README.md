@@ -66,13 +66,14 @@ Playlists are created as **public**, so anyone with the share URL can follow and
 
 | Tool | Description |
 |---|---|
-| `spotify_search` | Keyword or vibe search → ranked track list with IDs and URIs |
-| `spotify_recommend` | Seed track IDs → recommended tracks |
+| `spotify_search` | Keyword or vibe search → ranked item list with IDs and URIs |
+| `spotify_recommend` | Seed item IDs → recommended items |
 | `spotify_get_my_playlists` | List all playlists visible to the authenticated account |
-| `spotify_playlist_create` | Create a new collaborative playlist, returns ID and share URL |
-| `spotify_playlist_list` | List tracks in a playlist by ID |
-| `spotify_playlist_add` | Add tracks by URI |
-| `spotify_playlist_remove` | Remove tracks by URI |
+| `spotify_playlist_create` | Create a new playlist, returns ID and share URL |
+| `spotify_playlist_items_list` | List items in a playlist by ID |
+| `spotify_playlist_items_add` | Add items by URI |
+| `spotify_playlist_items_reorder` | Move items within a playlist by position |
+| `spotify_playlist_items_remove` | Remove items by URI |
 
 ## Re-setup after a restore
 
