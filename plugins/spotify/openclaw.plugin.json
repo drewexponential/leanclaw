@@ -1,0 +1,10 @@
+{
+  "id": "spotify",
+  "name": "Spotify",
+  "description": "Manage Spotify playlists via AI through Telegram",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

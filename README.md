@@ -50,6 +50,12 @@ Send your bot a DM to verify it responds.
 
 All sensitive values (`ANTHROPIC_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TAILSCALE_AUTHKEY`, `BRAVE_API_KEY`) are stored as [Fly.io secrets](https://fly.io/docs/apps/secrets/), not in `openclaw.json` or the image. Fly injects them as environment variables at runtime; OpenClaw reads them directly. Never put API keys in config files.
 
+## Plugins
+
+### Spotify
+
+Gives the agent read/write access to a Spotify playlist — search, recommend, add, and remove tracks via Telegram. See [`plugins/spotify/README.md`](plugins/spotify/README.md) for setup.
+
 ## Tailscale networking
 
 When Tailscale is enabled, the gateway binds to `--bind lan` and uses `--tailscale serve` to expose port 3000 on the tailnet. The `--tailscale-reset-on-exit` flag cleans up the Serve config on shutdown. This means:

@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends jq && rm -rf /v
 
 COPY entrypoint.sh /entrypoint.sh
 COPY config/ /config/
+COPY plugins/ /opt/plugins/
 RUN chmod +x /entrypoint.sh
 
 USER node
