@@ -17,7 +17,7 @@ interface SpotifyTrackObject {
 }
 
 interface SpotifyPlaylistItem {
-  track: SpotifyTrackObject | null;
+  item: SpotifyTrackObject | null;
   added_at: string;
 }
 
@@ -112,11 +112,11 @@ export class SpotifyClient {
 
   async getPlaylistTracks(playlistId: string): Promise<PlaylistTrack[]> {
     const data = await this.request<{ items: SpotifyPlaylistItem[] }>(
-      `/playlists/${playlistId}/items?limit=50`,
+      `/playlists/${playlistId}/items?limit=10`,
     );
     return data.items
-      .filter((item) => item.track)
-      .map((item) => ({ ...normalizeTrack(item.track!), addedAt: item.added_at }));
+      .filter((item) => item.item)
+      .map((item) => ({ ...normalizeTrack(item.item!), addedAt: item.added_at }));
   }
 
   async addToPlaylist(playlistId: string, trackUris: string[]): Promise<void> {
@@ -131,7 +131,19 @@ export class SpotifyClient {
   async removeFromPlaylist(playlistId: string, trackUris: string[]): Promise<void> {
     await this.request(`/playlists/${playlistId}/items`, {
       method: "DELETE",
-      body: JSON.stringify({ tracks: trackUris.map((uri) => ({ uri })) }),
+      body: JSON.stringify({ items: trackUris.map((uri) => ({ uri })) }),
+    });
+  }
+
+  async reorderPlaylistItems(
+    playlistId: string,
+    rangeStart: number,
+    insertBefore: number,
+    rangeLength = 1,
+  ): Promise<void> {
+    await this.request(`/playlists/${playlistId}/items`, {
+      method: "PUT",
+      body: JSON.stringify({ range_start: rangeStart, insert_before: insertBefore, range_length: rangeLength }),
     });
   }
 
