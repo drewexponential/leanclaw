@@ -4,7 +4,10 @@
     "controlUi": { "enabled": false }
   },
   "plugins": {
-    "deny": ["googlechat", "matrix", "nostr", "tlon", "twitch", "zalouser"]
+    "deny": ["googlechat", "matrix", "nostr", "tlon", "twitch", "zalouser"],
+    "load": {
+      "paths": ["/opt/plugins/spotify"]
+    }
   },
   "agents": {
     "defaults": {
