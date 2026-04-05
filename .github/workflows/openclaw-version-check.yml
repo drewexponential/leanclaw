@@ -1,0 +1,61 @@
+name: Check openclaw version
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Mondays at 9am UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: imjasonh/setup-crane@v0.4
+
+      - name: Get current pinned version
+        id: current
+        run: |
+          VERSION=$(grep 'ARG OPENCLAW_VERSION=' Dockerfile | cut -d= -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get latest version tag
+        id: latest
+        run: |
+          LATEST=$(crane ls ghcr.io/openclaw/openclaw \
+            | grep -E '^[0-9]{4}\.[0-9]+\.[0-9]+$' \
+            | sort -V \
+            | tail -1)
+          if [ -z "$LATEST" ]; then
+            echo "No version tags found, exiting."
+            exit 1
+          fi
+          echo "version=$LATEST" >> $GITHUB_OUTPUT
+
+      - name: Create PR if newer version available
+        if: steps.latest.outputs.version != steps.current.outputs.version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="chore/openclaw-${{ steps.latest.outputs.version }}"
+
+          if gh pr list --head "$BRANCH" --state open | grep -q .; then
+            echo "PR already open for $BRANCH, skipping."
+            exit 0
+          fi
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$BRANCH"
+          sed -i "s/ARG OPENCLAW_VERSION=.*/ARG OPENCLAW_VERSION=${{ steps.latest.outputs.version }}/" Dockerfile
+          git add Dockerfile
+          git commit -m "chore: bump openclaw to ${{ steps.latest.outputs.version }}"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --title "chore: bump openclaw to ${{ steps.latest.outputs.version }}" \
+            --body "Bumps openclaw base image from \`${{ steps.current.outputs.version }}\` to \`${{ steps.latest.outputs.version }}\`." \
+            --base main
