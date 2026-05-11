@@ -1,4 +1,4 @@
-ARG OPENCLAW_VERSION=2026.4.2
+ARG OPENCLAW_VERSION=2026.5.7
 FROM ghcr.io/openclaw/openclaw:${OPENCLAW_VERSION} AS base
 
 ENV OPENCLAW_CONFIG_PATH=/data/state/openclaw.json \
